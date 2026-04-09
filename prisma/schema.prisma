@@ -1,0 +1,551 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// NextAuth.js Models
+// ============================================================================
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================================================
+// User Model
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts             Account[]
+  sessions             Session[]
+  familyMembers        FamilyMember[]
+  createdFamilies      Family[]
+  createdFoods         FoodOption[]
+  votes                Vote[]
+  feedback             MealFeedback[]
+  scheduleOverrides    ScheduleEntry[] @relation("overriddenBy")
+  createdInvites       Invite[] @relation("createdBy")
+  groceryCheckedItems  GroceryItem[] @relation("checkedBy")
+  createdBreakfastSessions BreakfastPrepSession[] @relation("createdBy")
+  weightModifierApplied MealWeightModifier[] @relation("appliedBy")
+  weightModifierCleared MealWeightModifier[] @relation("clearedBy")
+
+  @@map("users")
+}
+
+// ============================================================================
+// Family Model
+// ============================================================================
+
+model Family {
+  id                      String   @id @default(cuid())
+  name                    String
+  lockInDays              Int      @default(3)
+  defaultEatOutDay        Int?     // 0=Sun, 1=Mon, ..., 6=Sat
+  timezone                String   @default("America/New_York")
+  createdById             String
+  memberCount             Int      @default(0)
+  dietaryRestrictions     String[] // Array of dietary restriction tags
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Relations
+  createdBy         User              @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  members           FamilyMember[]
+  foods             FoodOption[]
+  scheduleEntries   ScheduleEntry[]
+  groceryLists      GroceryList[]
+  votes             Vote[]
+  feedback          MealFeedback[]
+  invites           Invite[]
+  breakfastSessions BreakfastPrepSession[]
+  breakfastInventory BreakfastInventory[]
+  weightModifiers   MealWeightModifier[]
+
+  @@index([createdById])
+  @@map("families")
+}
+
+// ============================================================================
+// Family Member Model
+// ============================================================================
+
+model FamilyMember {
+  id                      String   @id @default(cuid())
+  familyId                String
+  userId                  String
+  role                    MemberRole
+  displayName             String?
+  avatarUrl               String?
+  dietaryTags             String[] // Array of dietary tags
+  isActive                Boolean  @default(true)
+  vetoesRemainingThisWeek Int      @default(1)
+  joinedAt                DateTime @default(now())
+
+  // Relations
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, userId])
+  @@index([familyId])
+  @@index([userId])
+  @@map("family_members")
+}
+
+enum MemberRole {
+  PARENT
+  MEMBER
+
+  @@map("member_roles")
+}
+
+// ============================================================================
+// Enums for Meals
+// ============================================================================
+
+enum MealType {
+  DINNER
+  BREAKFAST_PREP
+
+  @@map("meal_types")
+}
+
+enum MealCategory {
+  CHICKEN
+  BEEF
+  PORK
+  SEAFOOD
+  VEGETARIAN
+  PASTA
+  SLOW_COOKER
+  GRILL
+  INTERNATIONAL
+  FREESTYLE
+  BREAKFAST_PREP
+
+  @@map("meal_categories")
+}
+
+enum FoodStatus {
+  ACTIVE
+  ARCHIVED
+  PENDING_APPROVAL
+
+  @@map("food_statuses")
+}
+
+enum StorageMethod {
+  FRIDGE
+  FREEZER
+  COUNTER
+
+  @@map("storage_methods")
+}
+
+// ============================================================================
+// Food Option Model
+// ============================================================================
+
+model FoodOption {
+  id                 String   @id @default(cuid())
+  familyId           String
+  name               String
+  mealType           MealType @default(DINNER)
+  category           MealCategory
+  photoUrl           String?
+  thumbnailUrl       String?
+  recipeUrl          String?
+  servings           Int      @default(4)
+  prepTimeMinutes    Int      @default(30)
+  cookTimeMinutes    Int      @default(30)
+  dietaryTags        String[] // Array of dietary tags
+  seasonalTags       String[] // Array of seasonal tags
+  averageRating      Float    @default(0)
+  totalRatings       Int      @default(0)
+  timesServed        Int      @default(0)
+  lastServedAt       DateTime?
+  createdById        String
+  status             FoodStatus @default(ACTIVE)
+  batchYield         Int?
+  batchUnit          String?
+  storageMethod      StorageMethod?
+  shelfLifeDays      Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  family             Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy          User               @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  ingredients        Ingredient[]
+  scheduleEntries    ScheduleEntry[]
+  votes              Vote[]
+  feedback           MealFeedback[]
+  weightModifiers    MealWeightModifier[]
+  breakfastInventory BreakfastInventory[]
+
+  @@index([familyId])
+  @@index([createdById])
+  @@index([status])
+  @@map("food_options")
+}
+
+// ============================================================================
+// Ingredient Model
+// ============================================================================
+
+model Ingredient {
+  id               String   @id @default(cuid())
+  foodOptionId     String
+  name             String
+  quantity         Float
+  unit             String
+  groceryCategory  GroceryAisle
+  isOptional       Boolean  @default(false)
+
+  // Relations
+  foodOption FoodOption @relation(fields: [foodOptionId], references: [id], onDelete: Cascade)
+
+  @@index([foodOptionId])
+  @@map("ingredients")
+}
+
+enum GroceryAisle {
+  PRODUCE
+  DAIRY
+  PROTEIN
+  PANTRY
+  FROZEN
+  BAKERY
+  BEVERAGES
+  CONDIMENTS
+  SPICES
+  OTHER
+
+  @@map("grocery_aisles")
+}
+
+// ============================================================================
+// Schedule Entry Models
+// ============================================================================
+
+enum ScheduleType {
+  HOME_COOKED
+  EAT_OUT
+  SKIP
+
+  @@map("schedule_types")
+}
+
+enum LockedBy {
+  SYSTEM
+  PARENT_OVERRIDE
+
+  @@map("locked_by_types")
+}
+
+model ScheduleEntry {
+  id             String   @id @default(cuid())
+  familyId       String
+  date           DateTime
+  dayOfWeek      Int      // 0=Sunday, 6=Saturday
+  type           ScheduleType
+  foodOptionId   String?
+  isLocked       Boolean  @default(false)
+  lockedAt       DateTime?
+  lockedBy       LockedBy?
+  overriddenById String?
+  overrideNote   String?
+  headcount      Int      @default(7)
+  voteWinner     Boolean  @default(false)
+  week           String   // ISO week format like "2026-W16"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  family        Family      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  foodOption    FoodOption? @relation(fields: [foodOptionId], references: [id], onDelete: SetNull)
+  overriddenBy  User?       @relation("overriddenBy", fields: [overriddenById], references: [id], onDelete: SetNull)
+  votes         Vote[]
+  feedback      MealFeedback[]
+
+  @@unique([familyId, date])
+  @@index([familyId])
+  @@index([date])
+  @@index([week])
+  @@map("schedule_entries")
+}
+
+// ============================================================================
+// Vote Model
+// ============================================================================
+
+model Vote {
+  id               String   @id @default(cuid())
+  familyId         String
+  scheduleEntryId  String
+  userId           String
+  foodOptionId     String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  family           Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  scheduleEntry    ScheduleEntry  @relation(fields: [scheduleEntryId], references: [id], onDelete: Cascade)
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodOption       FoodOption     @relation(fields: [foodOptionId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleEntryId, userId])
+  @@index([familyId])
+  @@index([scheduleEntryId])
+  @@index([userId])
+  @@map("votes")
+}
+
+// ============================================================================
+// Meal Feedback Model
+// ============================================================================
+
+enum FeedbackAction {
+  NONE
+  VOTE_DOWN
+  ENCORE
+
+  @@map("feedback_actions")
+}
+
+model MealFeedback {
+  id              String   @id @default(cuid())
+  familyId        String
+  scheduleEntryId String
+  foodOptionId    String
+  userId          String
+  rating          Int      // 1-5
+  action          FeedbackAction @default(NONE)
+  photoUrl        String?
+  comment         String?
+  createdAt       DateTime @default(now())
+
+  // Relations
+  family          Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  scheduleEntry   ScheduleEntry  @relation(fields: [scheduleEntryId], references: [id], onDelete: Cascade)
+  foodOption      FoodOption     @relation(fields: [foodOptionId], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleEntryId, userId])
+  @@index([familyId])
+  @@index([scheduleEntryId])
+  @@index([userId])
+  @@map("meal_feedback")
+}
+
+// ============================================================================
+// Meal Weight Modifier Model
+// ============================================================================
+
+enum ModifierType {
+  VOTE_DOWN
+  ENCORE
+
+  @@map("modifier_types")
+}
+
+model MealWeightModifier {
+  id                    String   @id @default(cuid())
+  familyId              String
+  foodOptionId          String
+  type                  ModifierType
+  appliedById           String
+  initialPenalty        Float
+  decayIntervalWeeks    Int      @default(4)
+  expiresAt             DateTime
+  clearedById           String?
+  clearedAt             DateTime?
+  createdAt             DateTime @default(now())
+
+  // Relations
+  family                Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  foodOption            FoodOption @relation(fields: [foodOptionId], references: [id], onDelete: Cascade)
+  appliedBy             User       @relation("appliedBy", fields: [appliedById], references: [id], onDelete: Restrict)
+  clearedBy             User?      @relation("clearedBy", fields: [clearedById], references: [id], onDelete: SetNull)
+
+  @@index([familyId])
+  @@index([foodOptionId])
+  @@index([expiresAt])
+  @@map("meal_weight_modifiers")
+}
+
+// ============================================================================
+// Grocery List Models
+// ============================================================================
+
+enum GroceryListStatus {
+  DRAFT
+  APPROVED
+  SHOPPING
+  COMPLETED
+
+  @@map("grocery_list_statuses")
+}
+
+model GroceryList {
+  id               String   @id @default(cuid())
+  familyId         String
+  weekOf           String   // ISO week format like "2026-W16"
+  status           GroceryListStatus @default(DRAFT)
+  estimatedTotal   Int?     // Amount in cents
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  family Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  items  GroceryItem[]
+
+  @@index([familyId])
+  @@index([weekOf])
+  @@index([status])
+  @@map("grocery_lists")
+}
+
+model GroceryItem {
+  id                  String   @id @default(cuid())
+  groceryListId       String
+  ingredientName      String
+  quantity            Float
+  unit                String
+  groceryCategory     GroceryAisle
+  sourceEntryIds      String[] // IDs of related schedule entries
+  isChecked           Boolean  @default(false)
+  checkedById         String?
+  isPantryItem        Boolean  @default(false)
+  isRecurringStaple   Boolean  @default(false)
+  estimatedPrice      Int?     // Amount in cents
+
+  // Relations
+  groceryList GroceryList @relation(fields: [groceryListId], references: [id], onDelete: Cascade)
+  checkedBy   User?       @relation("checkedBy", fields: [checkedById], references: [id], onDelete: SetNull)
+
+  @@index([groceryListId])
+  @@map("grocery_items")
+}
+
+// ============================================================================
+// Invite Model
+// ============================================================================
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+
+  @@map("invite_statuses")
+}
+
+model Invite {
+  id          String   @id @default(cuid())
+  familyId    String
+  code        String   @unique
+  createdById String
+  email       String?
+  status      InviteStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  // Relations
+  family      Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy   User   @relation("createdBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([familyId])
+  @@index([code])
+  @@map("invites")
+}
+
+// ============================================================================
+// Breakfast Prep Models
+// ============================================================================
+
+model BreakfastPrepSession {
+  id              String   @id @default(cuid())
+  familyId        String
+  date            DateTime
+  foodOptionIds   String[] // Array of food option IDs
+  createdById     String
+  createdAt       DateTime @default(now())
+
+  // Relations
+  family          Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy       User   @relation("createdBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([familyId])
+  @@index([date])
+  @@map("breakfast_prep_sessions")
+}
+
+model BreakfastInventory {
+  id              String   @id @default(cuid())
+  familyId        String
+  foodOptionId    String
+  remainingServings Int
+  totalServings   Int
+  preppedAt       DateTime @default(now())
+  expiresAt       DateTime
+
+  // Relations
+  family          Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  foodOption      FoodOption @relation(fields: [foodOptionId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([foodOptionId])
+  @@index([expiresAt])
+  @@map("breakfast_inventory")
+}
