@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  serverComponentsExternalPackages: ['@prisma/client', '@auth/prisma-adapter'],
+  serverComponentsExternalPackages: ['@prisma/client'],
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -16,7 +16,6 @@ const nextConfig = {
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals.push('@prisma/client');
-      config.externals.push('@auth/prisma-adapter');
     }
     return config;
   },
