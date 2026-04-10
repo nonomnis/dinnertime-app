@@ -14,7 +14,7 @@ datasource db {
 // NextAuth.js Models
 // ============================================================================
 
-model Account {
+model Account {h
   id                 String  @id @default(cuid())
   userId             String
   type               String
@@ -90,7 +90,7 @@ model User {
 
 model Family {
   id                      String   @id @default(cuid())
-  name                    String
+  name                    String   @unique
   lockInDays              Int      @default(3)
   defaultEatOutDay        Int?     // 0=Sun, 1=Mon, ..., 6=Sat
   timezone                String   @default("America/New_York")
