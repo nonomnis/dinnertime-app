@@ -4,10 +4,11 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json ./
+COPY package.json ./
+COPY package-lock.json* ./
 
 # Install dependencies
-RUN npm ci
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # Copy application code
 COPY . .
@@ -47,6 +48,6 @@ ENV PORT=3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "server.js"]
+  # Use dumb-init to handle signals properly
+  ENTRYPOINT ["dumb-init", "--"]
+  CMD ["node", "server.js"]
