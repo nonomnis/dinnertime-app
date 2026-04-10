@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  serverComponentsExternalPackages: ['@prisma/client', '@auth/prisma-adapter'],
   typescript: {
     ignoreBuildErrors: true,
   },
