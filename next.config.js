@@ -13,6 +13,13 @@ const nextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push('@prisma/client');
+      config.externals.push('@auth/prisma-adapter');
+    }
+    return config;
+  },
   headers: async () => {
     return [
       {
