@@ -28,15 +28,16 @@ ENV NODE_ENV=production
 
 RUN apk add --no-cache dumb-init openssl
 
-# Copy Prisma client engine (required for @prisma/client in standalone builds)
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-
+# Copy built application from builder stage
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
+
+# Copy Prisma client AFTER standalone (standalone overwrites node_modules)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
@@ -50,5 +51,5 @@ ENV PORT=3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-  ENTRYPOINT ["dumb-init", "--"]
-  CMD ["node", "server.js"]
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "server.js"]
