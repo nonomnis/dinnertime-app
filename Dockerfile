@@ -39,6 +39,9 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+# Copy @auth adapter (needed by Route Handlers at runtime)
+COPY --from=builder /app/node_modules/@auth ./node_modules/@auth
+
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 USER nextjs
