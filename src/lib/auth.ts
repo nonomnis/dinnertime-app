@@ -32,9 +32,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const familyMember = await prisma.familyMember.findFirst({
           where: {
             userId: token.id as string,
-            family: {
-              isActive: true,
-            },
+            isActive: true,
           },
           include: {
             family: true,
