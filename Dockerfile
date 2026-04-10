@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install OpenSSL (needed for Prisma to detect correct binary target)
+RUN apk add --no-cache openssl
+
 # Copy package files and prisma schema (needed for postinstall)
 COPY package.json ./
 COPY prisma ./prisma/
@@ -43,5 +46,5 @@ ENV PORT=3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "server.js"]
+  ENTRYPOINT ["dumb-init", "--"]
+  CMD ["node", "server.js"]
