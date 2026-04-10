@@ -28,6 +28,10 @@ ENV NODE_ENV=production
 
 RUN apk add --no-cache dumb-init openssl
 
+# Copy Prisma client engine (required for @prisma/client in standalone builds)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
