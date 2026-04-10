@@ -23,7 +23,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init openssl
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
