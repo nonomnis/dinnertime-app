@@ -3,16 +3,24 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Copy package files and prisma schema (needed for postinstall)
 COPY package.json ./
+COPY prisma ./prisma/
+
+# Install dependencies (postinstall runs prisma generate)
 RUN npm install
 
+# Copy remaining application code
 COPY . .
+
+# Build the application
 RUN npm run build
 
 # Stage 2: Production Runtime
 FROM node:20-alpine
 
 WORKDIR /app
+
 ENV NODE_ENV=production
 
 RUN apk add --no-cache dumb-init
