@@ -2,7 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
+    serverComponentsExternalPackages: ['@prisma/client', 'next-auth', '@auth/core'],
   },
   typescript: {
     ignoreBuildErrors: true,
@@ -17,7 +17,7 @@ const nextConfig = {
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
-      config.externals = [...config.externals, '@prisma/client', '.prisma/client'];
+      config.externals = [...config.externals, '@prisma/client', '.prisma/client', 'next-auth', '@auth/core'];
     }
     return config;
   },
@@ -30,7 +30,7 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-XSS-Protection', value: '1; mode=block' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=()' },
+          { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera()' },
         ],
       },
       {
