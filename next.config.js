@@ -2,8 +2,9 @@
 const nextConfig = {
   output: 'standalone',
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'next-auth', '@auth/core'],
+    serverComponentsExternalPackages: ['@prisma/client'],
   },
+  transpilePackages: ['next-auth', '@auth/core'],
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -17,7 +18,20 @@ const nextConfig = {
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
-      config.externals = [...config.externals, '@prisma/client', '.prisma/client'];
+      config.externals = [
+        ...config.externals,
+        '@prisma/client',
+        '.prisma/client',
+        // Keep next/server external so NextRequest constructor survives bundling
+        'next/server',
+        'next/headers',
+      ];
+      // Disable server-side minification to prevent SWC from mangling
+      // class constructor names (causes "on is not a constructor" error)
+      config.optimization = {
+        ...config.optimization,
+        minimize: false,
+      };
     }
     return config;
   },
