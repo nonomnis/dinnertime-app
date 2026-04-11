@@ -19,6 +19,12 @@ const nextConfig = {
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = [...config.externals, '@prisma/client', '.prisma/client'];
+      // Disable server-side minification to prevent SWC from mangling
+      // next-auth class constructors (causes "on is not a constructor" error)
+      config.optimization = {
+        ...config.optimization,
+        minimize: false,
+      };
     }
     return config;
   },
@@ -50,7 +56,6 @@ const nextConfig = {
     ];
   },
   compress: true,
-  swcMinify: true,
 };
 
 module.exports = nextConfig;
