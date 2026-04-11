@@ -2,7 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', '@auth/prisma-adapter'],
+    serverComponentsExternalPackages: ['@prisma/client'],
   },
   typescript: {
     ignoreBuildErrors: true,
