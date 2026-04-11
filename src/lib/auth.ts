@@ -1,8 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
-// Use require with webpackIgnore to prevent webpack from bundling @auth/prisma-adapter
-// which internally imports @prisma/client and causes "en is not a constructor" error
-const { PrismaAdapter } = require(/* webpackIgnore: true */ "@auth/prisma-adapter");
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
