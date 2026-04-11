@@ -2,8 +2,9 @@
 const nextConfig = {
   output: 'standalone',
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'next-auth', '@auth/core'],
+    serverComponentsExternalPackages: ['@prisma/client'],
   },
+  transpilePackages: ['next-auth', '@auth/core'],
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -17,7 +18,7 @@ const nextConfig = {
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
-      config.externals = [...config.externals, '@prisma/client', '.prisma/client', 'next-auth', '@auth/core'];
+      config.externals = [...config.externals, '@prisma/client', '.prisma/client'];
     }
     return config;
   },
