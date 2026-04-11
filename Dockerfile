@@ -2,6 +2,18 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Accept build args from DigitalOcean App Platform (needed during npm run build)
+ARG DATABASE_URL
+ARG NEXTAUTH_SECRET
+ARG NEXTAUTH_URL
+ARG GOOGLE_CLIENT_ID
+ARG GOOGLE_CLIENT_SECRET
+ENV DATABASE_URL=$DATABASE_URL
+ENV NEXTAUTH_SECRET=$NEXTAUTH_SECRET
+ENV NEXTAUTH_URL=$NEXTAUTH_URL
+ENV GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+ENV GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+
 # Install OpenSSL (needed for Prisma to detect correct binary target)
 RUN apk add --no-cache openssl
 
@@ -22,7 +34,7 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 
-# Accept build args from DigitalOcean App Platform
+# Accept build args again for runtime stage
 ARG DATABASE_URL
 ARG NEXTAUTH_SECRET
 ARG NEXTAUTH_URL
