@@ -1,6 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+// Use require with webpackIgnore to prevent webpack from bundling PrismaClient
+// This is necessary because Next.js 14 App Router Route Handlers bundle all imports
+const { PrismaClient } = require(/* webpackIgnore: true */ "@prisma/client");
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const globalForPrisma = global as unknown as { prisma: InstanceType<typeof PrismaClient> };
 
 export const prisma =
   globalForPrisma.prisma ||
